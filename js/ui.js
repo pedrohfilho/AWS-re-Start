@@ -223,10 +223,10 @@ export function renderAuth(){
   document.body.classList.toggle("is-auth", !!auth.session);
   const bar = $("authInfo");
   if(auth.session){
-    bar.innerHTML = `<span class="who">${esc(auth.session.user.email)}${auth.isEditor ? " · <b>editor</b>" : ""}</span> <button class="btn" id="logout">Sair</button>`;
+    bar.innerHTML = `<span class="who">${esc(auth.session.user.email)}${auth.isEditor ? " · <b>editor</b>" : ""}</span> <button class="auth-link" id="logout">sair</button>`;
     $("logout").addEventListener("click", async () => { await api.signOut(); });
   }else{
-    bar.innerHTML = `<button class="btn btn-primary" id="login">Entrar</button>`;
+    bar.innerHTML = `<button class="auth-link" id="login">entrar</button>`;
     $("login").addEventListener("click", openLogin);
   }
 }
