@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWS re/Start · Acompanhamento da turma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="wrap">
+
+  <section class="hero">
+    <div class="ring" aria-hidden="true">
+      <svg width="112" height="112" viewBox="0 0 112 112">
+        <circle class="track" cx="56" cy="56" r="48" fill="none" stroke-width="10"></circle>
+        <circle class="fill" id="ring" cx="56" cy="56" r="48" fill="none" stroke-width="10" stroke-dasharray="301.6" stroke-dashoffset="301.6"></circle>
+      </svg>
+      <div class="ring-label"><span class="ring-pct" id="ringPct">0%</span><span class="ring-sub" id="ringSub">0/0</span></div>
+    </div>
+    <div class="hero-main">
+      <div class="kicker">Acompanhamento da turma · <a href="https://awsrestart.instructure.com/courses/4374" target="_blank" rel="noopener noreferrer">BRSAO237</a></div>
+      <h1>AWS re/Start</h1>
+      <p>Registre as aulas com data e anotações, e marque os assuntos passados em cada uma. O progresso vem daí.</p>
+    </div>
+  </section>
+
+  <div class="authbar">
+    <span class="brand-mini">Turma BRSAO237</span>
+    <span class="grow"></span>
+    <span id="authInfo"></span>
+  </div>
+  <div id="cfgWarn" class="cfg-warn">⚠️ Falta configurar o Supabase. Abra o arquivo e cole a URL e a chave nas duas primeiras linhas do script (<b>SUPABASE_URL</b> e <b>SUPABASE_ANON_KEY</b>).</div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="assuntos">Assuntos</button>
+    <button class="tab" data-tab="aulas">Aulas</button>
+  </div>
+
+  <!-- ASSUNTOS -->
+  <div id="viewAssuntos">
+    <div class="stats" id="stats">
+      <div class="chip" data-k="prox" role="button" tabindex="0"><span class="dot"></span><span class="lbl">Próximos</span><span class="n" id="cProx">0</span></div>
+      <div class="chip" data-k="ultima" role="button" tabindex="0"><span class="dot"></span><span class="lbl">Última aula</span><span class="n" id="cUltima">0</span></div>
+      <div class="chip" data-k="feito" role="button" tabindex="0"><span class="dot"></span><span class="lbl">Concluídos</span><span class="n" id="cFeito">0</span></div>
+      <div class="chip" data-k="nota" role="button" tabindex="0"><span class="dot"></span><span class="lbl">Anotações</span><span class="n" id="cNota">0</span></div>
+    </div>
+
+    <div class="assign-bar">
+      <span class="lab">Marcar assuntos na aula:</span>
+      <select id="activeSel"><option value="">— selecione uma aula —</option></select>
+    </div>
+
+    <div class="tools">
+      <div class="search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="q" type="text" placeholder="Buscar assunto…" autocomplete="off">
+      </div>
+      <button class="btn" id="toggleAll">Recolher tudo</button>
+    </div>
+
+    <div id="list"></div>
+
+    <div class="legend">
+      <span><i style="background:var(--ink-faint)"></i> Próximo</span>
+      <span><i style="background:var(--current)"></i> Última aula</span>
+      <span><i style="background:var(--done)"></i> Concluído</span>
+    </div>
+  </div>
+
+  <!-- AULAS -->
+  <div id="viewAulas" hidden>
+    <div class="lesson-top">
+      <h2>Diário de aulas</h2>
+      <button class="btn btn-primary" id="newLesson">+ Nova aula</button>
+    </div>
+    <div id="generalWall"></div>
+    <div id="lessonList"></div>
+  </div>
+
+  <div class="foot"><span class="sync" id="sync"></span><span id="modeText">Conectando…</span></div>
+</div>
+
+<!-- modal anotação de assunto -->
+<div class="modal-bg" id="noteBg">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="nTitle">
+    <h3 id="nTitle">Anotação do assunto</h3>
+    <div class="sub" id="nSub"></div>
+    <textarea id="nText" placeholder="Link de estudo, material, ou uma observação sobre este assunto…"></textarea>
+    <div class="hint">Links viram clicáveis. Visível para toda a turma.</div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="nDelete">Remover</button>
+      <span class="grow"></span>
+      <button class="btn" id="nCancel">Cancelar</button>
+      <button class="btn btn-primary" id="nSave">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- modal aula -->
+<div class="modal-bg" id="lessonBg">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="lTitle">
+    <h3 id="lTitle">Nova aula</h3>
+    <label for="lDate">Data</label>
+    <input type="date" id="lDate">
+    <label for="lTitleInp">Título (opcional)</label>
+    <input type="text" id="lTitleInp" placeholder="Ex: Introdução a redes">
+    <label for="lNote">Anotações e links da aula</label>
+    <textarea id="lNote" placeholder="O que o professor passou, links citados na aula, avisos…"></textarea>
+    <div class="hint">Links viram clicáveis. Visível para toda a turma.</div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="lDelete">Excluir aula</button>
+      <span class="grow"></span>
+      <button class="btn" id="lCancel">Cancelar</button>
+      <button class="btn btn-primary" id="lSave">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- modal login -->
+<div class="modal-bg" id="loginBg">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="liTitle">
+    <h3 id="liTitle">Entrar</h3>
+    <div class="sub">Só quem edita o quadro precisa entrar (você). Comentar é aberto — não precisa de conta.</div>
+    <label for="liEmail">E-mail</label>
+    <input type="text" id="liEmail" placeholder="voce@email.com" autocomplete="email">
+    <label for="liPass">Senha</label>
+    <input type="password" id="liPass" placeholder="••••••••" autocomplete="current-password">
+    <div class="li-status" id="liStatus"></div>
+    <div class="modal-actions">
+      <span class="grow"></span>
+      <button class="btn" id="liCancel">Fechar</button>
+      <button class="btn btn-primary" id="liSend">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
