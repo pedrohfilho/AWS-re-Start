@@ -14,7 +14,9 @@ export function isReady(){ return !!sb; }
 // Cria o cliente. Retorna false se as credenciais não foram configuradas.
 export function init(){
   if(!configured()) return false;
-  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true }   // fica logado até clicar em sair
+  });
   return true;
 }
 
@@ -65,6 +67,15 @@ export function subscribeRealtime(){
     .on("postgres_changes", {event:"*", schema:"public", table:"subject_state"}, loadAll)
     .on("postgres_changes", {event:"*", schema:"public", table:"comments"}, loadAll)
     .subscribe();
+}
+
+// Rede de segurança: se o realtime não disparar, recarrega ao voltar à aba
+// e a cada 25s. Garante que a web mostre o que está no banco.
+export function startAutoRefresh(){
+  const refresh = () => { if(!document.hidden) loadAll(); };
+  document.addEventListener("visibilitychange", refresh);
+  window.addEventListener("focus", refresh);
+  setInterval(refresh, 25000);
 }
 
 // ---- Escrita (assuntos e aulas: só editores, garantido pelas regras do banco) ----

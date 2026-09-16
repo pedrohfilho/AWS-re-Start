@@ -133,6 +133,23 @@
   </div>
 </div>
 
+<!-- modal novo comentário -->
+<div class="modal-bg" id="commentBg">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="coTitle">
+    <h3 id="coTitle">Novo comentário</h3>
+    <label for="coName">Seu nome (opcional)</label>
+    <input type="text" id="coName" maxlength="40" placeholder="Seu nome">
+    <label for="coText">Comentário</label>
+    <textarea id="coText" placeholder="Escreva um comentário…"></textarea>
+    <div class="hint">Links viram clicáveis. Visível para toda a turma.</div>
+    <div class="modal-actions">
+      <span class="grow"></span>
+      <button class="btn" id="coCancel">Cancelar</button>
+      <button class="btn btn-primary" id="coSend">Enviar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script type="module" src="js/main.js"></script>

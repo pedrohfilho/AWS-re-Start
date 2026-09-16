@@ -45,34 +45,27 @@ export function render(){
 function commentsHTML(bucketId){
   const cmts = state.comments[bucketId] || [];
   return `<div class="comments">
-    <div class="comments-h">Comentários</div>
-    <div class="comment-list">${
-      cmts.map(c => `<div class="comment"><div class="c-meta"><b>${esc(c.author || "Anônimo")}</b> · ${fmtDateTime(c.created_at)}</div><div class="c-body">${linkify(c.body)}</div>${auth.isEditor ? `<button class="c-del" data-cid="${c.id}">apagar</button>` : ""}</div>`).join("")
-      || `<div class="c-empty">Sem comentários ainda. Deixe o seu abaixo.</div>`
-    }</div>
-    <div class="comment-form">
-      <input class="c-name" type="text" placeholder="Seu nome (opcional)" maxlength="40">
-      <textarea class="c-input" placeholder="Escreva um comentário…"></textarea>
-      <button class="btn btn-primary c-send">Enviar</button>
+    <div class="comments-head">
+      <span class="comments-h">Comentários${cmts.length ? ` (${cmts.length})` : ""}</span>
+      <button class="add-comment" data-bucket="${bucketId}">+ comentário</button>
     </div>
+    ${cmts.length
+      ? `<div class="comment-list">${
+          cmts.map(c => `<div class="comment"><div class="c-meta"><b>${esc(c.author || "Anônimo")}</b> · ${fmtDateTime(c.created_at)}${auth.isEditor ? ` <button class="c-del" data-cid="${c.id}">apagar</button>` : ""}</div><div class="c-body">${linkify(c.body)}</div></div>`).join("")
+        }</div>`
+      : `<div class="c-empty">Sem comentários ainda.</div>`}
   </div>`;
 }
 function bindComments(container, bucketId){
   container.querySelectorAll(".c-del").forEach(b => b.addEventListener("click", () => handleDeleteComment(b.dataset.cid)));
-  const cin = container.querySelector(".c-input"), cname = container.querySelector(".c-name"), csend = container.querySelector(".c-send");
-  if(csend) csend.addEventListener("click", () => {
-    const v = cin.value.trim();
-    if(v){ handleAddComment(bucketId, v, cname.value.trim()); cin.value = ""; }
-  });
+  const add = container.querySelector(".add-comment");
+  if(add) add.addEventListener("click", () => openComment(bucketId));
 }
 function renderGeneralWall(){
   const el = $("generalWall");
-  el.innerHTML = `<div class="lesson wall">
-    <div class="lesson-head">
-      <div class="wall-ico">💬</div>
-      <div class="lesson-info"><div class="lt">Mural da turma</div><div class="lm">Comentários gerais, sem aula específica</div></div>
-    </div>
-    <div class="lesson-body">${commentsHTML(GENERAL)}</div>
+  el.innerHTML = `<div class="wall">
+    <div class="wall-head"><span class="wall-t">Mural da turma</span><span class="wall-sub">comentários gerais, sem aula</span></div>
+    ${commentsHTML(GENERAL)}
   </div>`;
   bindComments(el, GENERAL);
 }
@@ -233,7 +226,7 @@ export function renderAuth(){
 
 // ---------- Ações (assuntos / aulas) ----------
 async function assignToActive(key){
-  if(!canEdit()){ toast("Só editores marcam assuntos. Entre com uma conta autorizada."); return; }
+  if(!canEdit()) return;                 // não-editor: clique não faz nada, sem aviso
   const act = ui.active;
   if(!act || !state.lessons[act]){ toast("Escolha ou crie uma aula ali em cima primeiro."); return; }
   const r = recOf(key);
@@ -278,7 +271,8 @@ async function deleteLesson(id){
 }
 async function handleAddComment(bucketId, body, name){
   const lessonId = bucketId === GENERAL ? null : bucketId;
-  try{ await api.addComment(lessonId, body, name); }catch(e){ toast("Não consegui enviar o comentário."); }
+  try{ await api.addComment(lessonId, body, name); return true; }
+  catch(e){ toast("Não enviou — verifique a conexão com o Supabase."); return false; }
 }
 async function handleDeleteComment(id){
   try{ await api.deleteComment(id); }catch(e){ toast("Não consegui apagar."); }
@@ -320,6 +314,17 @@ function openLogin(){
   setTimeout(() => $("liEmail").focus(), 30);
 }
 function closeLogin(){ $("loginBg").classList.remove("show"); }
+
+// ---------- Modal: novo comentário ----------
+let commentBucket = null;
+function openComment(bucketId){
+  commentBucket = bucketId;
+  $("coName").value = "";
+  $("coText").value = "";
+  $("commentBg").classList.add("show");
+  setTimeout(() => $("coText").focus(), 30);
+}
+function closeComment(){ commentBucket = null; $("commentBg").classList.remove("show"); }
 
 // ---------- Abas ----------
 export function switchTab(t){
@@ -394,12 +399,25 @@ export function initUI(){
     }catch(e){ st.textContent = "Erro: " + (e.message || "verifique e-mail e senha"); }
   });
 
+  // modal comentário
+  $("coCancel").addEventListener("click", closeComment);
+  $("commentBg").addEventListener("click", e => { if(e.target === $("commentBg")) closeComment(); });
+  $("coSend").addEventListener("click", async () => {
+    const v = $("coText").value.trim();
+    if(!v){ return; }
+    const btn = $("coSend"); btn.disabled = true;
+    const ok = await handleAddComment(commentBucket, v, $("coName").value.trim());
+    btn.disabled = false;
+    if(ok) closeComment();
+  });
+
   // esc fecha modais
   document.addEventListener("keydown", e => {
     if(e.key === "Escape"){
       if($("noteBg").classList.contains("show")) closeNote();
       if($("lessonBg").classList.contains("show")) closeLesson();
       if($("loginBg").classList.contains("show")) closeLogin();
+      if($("commentBg").classList.contains("show")) closeComment();
     }
   });
 }
