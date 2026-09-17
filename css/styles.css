@@ -131,6 +131,9 @@
 
   /* Aulas */
   .lesson-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap}
+  .lesson-top-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .month-filter{padding:8px 10px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-family:inherit;font-size:13px;cursor:pointer}
+  .month-filter:focus{outline:2px solid var(--brand);outline-offset:1px}
   .lesson-top h2{font-size:17px}
   .lesson{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden}
   .lesson.latest{border-color:var(--current-line)}

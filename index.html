@@ -24,7 +24,7 @@
     <div class="hero-main">
       <div class="kicker">Acompanhamento da turma · <a href="https://awsrestart.instructure.com/courses/4374" target="_blank" rel="noopener noreferrer">BRSAO237</a></div>
       <h1>AWS re/Start</h1>
-      <p>Registre as aulas com data e anotações, e marque os assuntos passados em cada uma. O progresso vem daí.</p>
+      <p>Acompanhe o que já foi passado nas aulas e os materiais de cada uma.</p>
     </div>
   </section>
 
@@ -70,7 +70,10 @@
   <div id="viewAulas" hidden>
     <div class="lesson-top">
       <h2>Diário de aulas</h2>
-      <button class="btn btn-primary" id="newLesson">+ Nova aula</button>
+      <div class="lesson-top-actions">
+        <select id="monthFilter" class="month-filter"></select>
+        <button class="btn btn-primary" id="newLesson">+ Nova aula</button>
+      </div>
     </div>
     <div id="generalWall"></div>
     <div id="lessonList"></div>

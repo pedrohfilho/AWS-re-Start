@@ -15,6 +15,7 @@ let filter = null;
 let query = "";
 let noteKey = null;
 let lessonId = null;
+let lessonMonth = "";   // filtro de mês na aba Aulas ("" = todos)
 
 const $ = id => document.getElementById(id);
 
@@ -37,8 +38,24 @@ export function render(){
   renderStats();
   renderActiveSel();
   renderList();
+  renderMonthFilter();
   renderGeneralWall();
   renderLessons();
+}
+
+const MONTH_NAMES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+function monthLabel(ym){
+  const [y, m] = ym.split("-");
+  return `${MONTH_NAMES[parseInt(m,10)-1] || m} ${y}`;
+}
+function renderMonthFilter(){
+  const sel = $("monthFilter");
+  const set = new Set();
+  Object.values(state.lessons).forEach(l => { if(l.date && l.date.length >= 7) set.add(l.date.slice(0,7)); });
+  const months = [...set].sort().reverse();
+  if(lessonMonth && !months.includes(lessonMonth)) lessonMonth = "";
+  sel.innerHTML = `<option value="">Todos os meses</option>` + months.map(ym => `<option value="${ym}">${monthLabel(ym)}</option>`).join("");
+  sel.value = lessonMonth;
 }
 
 // ---------- Comentários (reutilizável: aula ou mural geral) ----------
@@ -166,12 +183,17 @@ function renderList(){
 // ---------- Aba Aulas ----------
 function renderLessons(){
   const el = $("lessonList");
-  const s = lessonsSorted();
-  if(!s.length){
+  const all = lessonsSorted();
+  if(!all.length){
     el.innerHTML = `<div class="empty">Nenhuma aula ainda. Toque em “+ Nova aula” pra registrar a primeira — pode ser uma que já aconteceu.</div>`;
     return;
   }
-  const latest = s[0].id;
+  const latest = all[0].id;
+  const s = lessonMonth ? all.filter(l => (l.date || "").slice(0,7) === lessonMonth) : all;
+  if(!s.length){
+    el.innerHTML = `<div class="empty">Nenhuma aula neste mês.</div>`;
+    return;
+  }
   el.innerHTML = "";
   s.forEach(l => {
     const subs = subjectsOfLesson(l.id);
@@ -184,7 +206,7 @@ function renderLessons(){
       <div class="lesson-head">
         <div class="lesson-date"><div class="d">${dd}</div><div class="m">${mm}</div></div>
         <div class="lesson-info">
-          <div class="lt">${esc(l.title || "Aula")}${l.id === latest ? `<span class="badge-latest">última aula</span>` : ""}</div>
+          <div class="lt">${esc(l.title || (l.date ? "Aula de " + fmtDate(l.date) : "Aula"))}${l.id === latest ? `<span class="badge-latest">última aula</span>` : ""}</div>
           <div class="lm">${subs.length} assunto${subs.length === 1 ? "" : "s"} · ${l.date ? fmtDate(l.date) : "sem data"}</div>
         </div>
       </div>
@@ -345,6 +367,7 @@ export function initUI(){
   // busca / seletor de aula ativa
   $("q").addEventListener("input", e => { query = e.target.value; renderList(); });
   $("activeSel").addEventListener("change", e => { ui.active = e.target.value; saveUI(); });
+  $("monthFilter").addEventListener("change", e => { lessonMonth = e.target.value; renderLessons(); });
   // recolher/expandir
   const toggleBtn = $("toggleAll");
   toggleBtn.addEventListener("click", () => {
